@@ -21,9 +21,15 @@ var getArtist = function(name) {
 		.then(function(item) {
 			artist = item.artists.items[0];
 			console.log(artist);
+			return getFromApi(`artists/${artist.id}/related-artists`)
+		})
+		.then(function(item){
+			artist.related = item.artists;
 			return artist;
-		}
-	);
+		})
+		.catch(function(err){
+			console.error(err);
+		});
 };
 
 // function myObjectCreator() {
