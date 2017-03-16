@@ -1,6 +1,5 @@
 var getFromApi = function(endpoint, query={}) {
 	const url = new URL(`https://api.spotify.com/v1/${endpoint}`);
-	console.log(query);
 	Object.keys(query).forEach(key => url.searchParams.append(key, query[key]));
 	return fetch(url).then(function(response) {
 		if (!response.ok) {
@@ -18,18 +17,30 @@ var getArtist = function(name) {
     type: 'artist'
 	}
 	return getFromApi('search/', artistQuery)
+	.then(function(item) {
+		artist = item.artists.items[0];
+		return getFromApi(`artists/${artist.id}/related-artists`)
+	})
+	.then(function(item){
+		artist.related = item.artists;
+		relatedArtistPromise = [];
+		for (let i = 0; i < artist.related.length; i++) {
+			let id = artist.related[i].id;
+			let query = {"country": "US"};
+			relatedArtistPromise.push(getFromApi(`artists/${id}/top-tracks`, query));
+		}
+		var allPromise = Promise.all(relatedArtistPromise);
+		return allPromise
 		.then(function(item) {
-			artist = item.artists.items[0];
-			console.log(artist);
-			return getFromApi(`artists/${artist.id}/related-artists`)
-		})
-		.then(function(item){
-			artist.related = item.artists;
+			for (let i = 0; i < item.length; i++) {
+				artist.related[i].tracks = item[i].tracks
+			}
 			return artist;
 		})
-		.catch(function(err){
-			console.error(err);
-		});
+	})
+	.catch(function(err){
+		console.error(err);
+	});
 };
 
 // function myObjectCreator() {
